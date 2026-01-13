@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="USMS Rwanda 2025 - Multi-School Management System">
+    <meta name="theme-color" content="#0B4D8D">
+    <title>USMS Rwanda 2025 - Multi-School System</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+          integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxVe5uzm5u3z8=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- A-Frame for VR -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- jsPDF and autoTable for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #0B4D8D;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #f8f9fa;
+            --text-color: #333;
+            --border-color: #ddd;
+            --background: #f0f4f8;
+            --paid-bg: #d4edda;
+            --paid-text: #155724;
+            --partial-bg: #fff3cd;
+            --partial-text: #856404;
+            --pending-bg: #f8d7da;
+            --pending-text: #721c24;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--background);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        header {
+            background: linear-gradient(90deg, var(--primary), #003087);
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        #schoolInfo div { font-size: 18px; font-weight: 700; }
+        #schoolCode { font-size: 14px; opacity: 0.9; }
+        #headTeacher { font-size: 14px; margin-top: 4px; }
+        #schoolLocation { font-size: 14px; }
+        #schoolSelector, #yearSelector, #termSelector {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: white;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        #yearSelector, #termSelector { margin-left: 10px; }
+        #navMenu {
+            background: white;
+            padding: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            overflow-x: auto;
+        }
+        #navMenu button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            white-space: nowrap;
+            transition: 0.3s;
+        }
+        #navMenu button:hover, #navMenu button.active {
+            background: #003087;
+            transform: translateY(-2px);
+        }
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 15px; }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+        .hidden { display: none !important; }
+        .tab { display: none; }
+        .tab.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        input, select, button {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        input, select {
+            width: 100%;
+            border: 1px solid var(--border-color);
+        }
+        input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(11,77,141,0.2);
+        }
+        button {
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-pay { background: var(--success); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 14px;
+            text-align: left;
+        }
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            vertical-align: middle;
+        }
+        tr:nth-child(even) { background: #f9fbfd; }
+        tr:hover { background: #f0f8ff; }
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            min-width: 100px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .status-paid { background: var(--paid-bg); color: var(--paid-text); border: 2px solid #a8e6b0; }
+        .status-partial { background: var(--partial-bg); color: var(--partial-text); border: 2px solid #ffe08a; }
+        .status-pending { background: var(--pending-bg); color: var(--pending-text); border: 2px solid #f1aeb5; }
+        .flex { display: flex; gap: 20px; flex-wrap: wrap; }
+        .stat-card {
+            flex: 1;
+            min-width: 180px;
+            background: linear-gradient(135deg, var(--primary), #0b6bc7);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .big-stat {
+            padding: 35px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .big-balance { background: linear-gradient(135deg, #27ae60, #1e8449); }
+        .big-outstanding { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .chart-container {
+            max-width: 420px;
+            margin: 30px auto;
+            height: 320px;
+        }
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .fees-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .fees-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .fees-group h4 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            text-align: center;
+        }
+        .loading {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            gap: 15px;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .vr-container {
+            width: 100%;
+            height: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            margin: 25px 0;
+        }
+        #loginScreen {
+            max-width: 420px;
+            margin: 80px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        .payment-details {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #learnersListModal, #learnersListModal * { visibility: visible; }
+            #learnersListModal { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            .no-print { display: none !important; }
+            header, #navMenu, .loading, #loginScreen { display: none; }
+        }
+        .fee-item-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .fee-item-row input {
+            margin: 0;
+        }
+        .fee-name {
+            flex: 2;
+        }
+        .fee-amount {
+            flex: 1;
+        }
+        .fee-details {
+            font-size: 14px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+<div id="loadingScreen" class="loading">
+    <div class="spinner"></div>
+    <p>Loading USMS Rwanda ...</p>
+</div>
+<div id="loginScreen">
+    <h2><i class="fas fa-school fa-2x"></i><br>USMS Rwanda </h2>
+    <p><strong>Unified Multi-School Management System</strong></p>
+    <p style="margin:20px 0; color:#555;">Offline-Capable • Multi-School • Secure</p>
+    <input type="text" id="username" placeholder="Username (admin/finance or staff code for head teachers)" autocomplete="username" required>
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+    <button class="btn-primary" style="width:100%; padding:14px; margin-top:20px;" onclick="login()">Login</button>
+    <p style="margin-top:30px; font-size:14px; color:#666;">
+        Contact your system administrator for login credentials.<br>
+        Try to use safety credentials and <br>
+        Use strong password with Characters, Symbols, Numbers,Small letters and acapital letters.
+    </p>
+</div>
+<div id="app" class="hidden">
+    <header>
+        <div id="schoolInfo">
+            <div id="schoolName">Select a School</div>
+            <div id="schoolCode"></div>
+            <div id="headTeacher"></div>
+            <small id="schoolLocation"></small>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <select id="schoolSelector" onchange="switchSchool(this.value)"></select>
+            <button class="btn-success btn-sm" id="addSchoolBtn" onclick="showAddSchoolModal()">+ Add School</button>
+            <button class="btn-primary btn-sm" id="editSchoolBtn" onclick="showEditSchoolModal()" style="display:none;">Edit School</button>
+            <select id="yearSelector" onchange="changeYear(this.value)">
+                <option value="2024-2025">2024-2025</option>
+                <option value="2025-2026" selected>2025-2026</option>
+                <option value="2026-2027">2026-2027</option>
+            </select>
+            <select id="termSelector" onchange="changeTerm(this.value)">
+                <option value="1" selected>Term 1</option>
+                <option value="2">Term 2</option>
+                <option value="3">Term 3</option>
+            </select>
+            <div id="userInfo"><i class="fas fa-user-circle"></i> <span id="currentUser">User</span></div>
+            <button onclick="logout()" class="btn-danger btn-sm">Logout</button>
+        </div>
+    </header>
+    <nav id="navMenu">
+        <button onclick="showTab('dashboard')" class="active">Dashboard</button>
+        <button onclick="showTab('learners')">Learners</button>
+        <button onclick="showTab('staff')">Staff</button>
+        <button onclick="showTab('classes')">Classes</button>
+        <button onclick="showTab('feesTab')">Fees</button>
+        <button onclick="showTab('financeTab')">Finance</button>
+        <button onclick="showTab('vrTab')">VR Tour</button>
+    </nav>
+    <div class="container">
+        <div id="dashboard" class="tab active card">
+            <h2>Dashboard - Term <span id="dashTerm">1</span> <span id="dashYear">2025-2026</span></h2>
+            <div class="flex">
+                <div class="stat-card"><h3 id="dashTotalLearners">0</h3><p>Total Learners</p></div>
+                <div class="stat-card"><h3 id="dashBoys">0</h3><p>Boys</p></div>
+                <div class="stat-card"><h3 id="dashGirls">0</h3><p>Girls</p></div>
+                <div class="stat-card"><h3 id="dashTotalStaff">0</h3><p>Total Staff</p></div>
+                <div class="stat-card"><h3 id="dashFeesCollected">RWF 0</h3><p>Collected</p></div>
+                <div class="stat-card"><h3 id="dashFeesRate">0%</h3><p>Collection Rate</p></div>
+                <div class="stat-card"><h3 id="dashTotalClasses">0</h3><p>Classes</p></div>
+            </div>
+        </div>
+        <div id="learners" class="tab card">
+            <h2>Learners Management</h2>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+                <button class="btn-success" onclick="showAddLearnerModal()">Add Learner</button>
+                <button class="btn-primary" onclick="showLearnersListModal('all')">Full List</button>
+                <button class="btn-success" onclick="showLearnersListModal('paid')">Paid</button>
+                <button class="btn-warning" onclick="showLearnersListModal('partial')">Partial</button>
+                <button class="btn-danger" onclick="showLearnersListModal('pending')">Pending</button>
+                <button class="btn-primary" onclick="exportLearners()">Export All</button>
+                <button class="btn-primary" onclick="downloadLearnerTemplate()">Template</button>
+                <button class="btn-primary" onclick="document.getElementById('importLearnersFile').click()">Import CSV</button>
+                <button class="btn-primary" onclick="downloadPaymentsTemplate()">Payments Template</button>
+                <button class="btn-primary" onclick="document.getElementById('importPaymentsFile').click()">Import Payments CSV</button>
+                <select id="classFilter" onchange="renderLearners()"><option value="">All Classes</option></select>
+                <input type="text" id="learnerSearch" placeholder="Search by Code or Name..." style="flex:1;">
+            </div>
+            <input type="file" id="importLearnersFile" style="display:none" accept=".csv" onchange="importLearners(event)">
+            <input type="file" id="importPaymentsFile" style="display:none" accept=".csv" onchange="importPayments(event)">
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SDMS Code</th>
+                            <th>Name</th>
+                            <th>Father's Name</th>
+                            <th>Mother's Name</th>
+                            <th>Class</th>
+                            <th>Gender</th>
+                            <th>Due</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Payments</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="learnerList"></tbody>
+                </table>
+            </div>
+            <div id="learnerPagination" class="pagination"></div>
+        </div>
+        <div id="staff" class="tab card">
+            <h2>Staff Management</h2>
+            <div style="margin-bottom:20px;">
+                <button class="btn-success" onclick="showAddStaffModal()">Add Staff</button>
+                <button class="btn-primary" onclick="exportStaff()">Export</button>
+                <button class="btn-primary" onclick="downloadStaffTemplate()">Template</button>
+                <button class="btn-primary" onclick="document.getElementById('importStaffFile').click()">Import</button>
+            </div>
+            <input type="file" id="importStaffFile" style="display:none" accept=".csv" onchange="importStaff(event)">
+            <table>
+                <thead><tr><th>Code</th><th>Name</th><th>Gender</th><th>Role</th><th>Actions</th></tr></thead>
+                <tbody id="staffList"></tbody>
+            </table>
+        </div>
+        <div id="classes" class="tab card">
+            <h2>Classes Management</h2>
+            <div style="margin-bottom:20px;">
+                <button class="btn-success" onclick="addClass()">Add New Class</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:30%;">Class Name</th>
+                        <th style="width:30%;">Number of Learners</th>
+                        <th style="width:40%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="classList"></tbody>
+            </table>
+            <div style="margin-top:20px; padding:15px; background:#e8f4fd; border-radius:8px; text-align:center; font-size:16px;">
+                <strong>Total Classes: <span id="totalClassesCount" style="color:var(--primary); font-size:22px;">0</span></strong>
+            </div>
+        </div>
+        <div id="feesTab" class="tab card">
+            <h2>Fees Structure - Term <span id="feesTermDisplay">1</span></h2>
+            <button class="btn-success" onclick="showFeesModal()">Edit Fees</button>
+            <div class="fees-grid">
+                <div class="fees-group"><h4>Nursery (N1-N3)</h4><p>RWF <strong id="nurseryTotal">35,000</strong></p><div class="fee-details" id="nurseryItems"></div></div>
+                <div class="fees-group"><h4>Lower Primary (P1-P2)</h4><p>RWF <strong id="lowerTotal">45,000</strong></p><div class="fee-details" id="lowerItems"></div></div>
+                <div class="fees-group"><h4>Upper Primary (P3-P6)</h4><p>RWF <strong id="upperTotal">55,000</strong></p><div class="fee-details" id="upperItems"></div></div>
+                <div class="fees-group"><h4>Secondary (S1-S6)</h4><p>RWF <strong id="secondaryTotal">90,000</strong></p><div class="fee-details" id="secondaryItems"></div></div>
+            </div>
+        </div>
+        <div id="financeTab" class="tab card">
+            <h2>Finance Overview</h2>
+            <div class="big-stat big-balance">RWF <span id="totalCollected">0</span><div>Total Collected</div></div>
+            <div class="big-stat big-outstanding">RWF <span id="totalOutstanding">0</span><div>Outstanding Balance</div></div>
+            <div class="chart-container"><canvas id="feesChart"></canvas></div>
+        </div>
+        <div id="vrTab" class="tab card">
+            <h2>Virtual School Tour (360° VR</h2>
+            <p>Drag to explore • Mobile: tap VR icon</p>
+            <div class="vr-container">
+                <a-scene embedded>
+                    <a-sky color="#87CEEB"></a-sky>
+                    <a-plane position="0 0 -4" rotation="-90 0 0" width="80" height="80" color="#7BC8A4"></a-plane>
+                    <a-box position="-10 4 -20" depth="18" height="8" width="30" color="#D2691E"></a-box>
+                    <a-text value="YOUR SCHOOL" position="-10 7 -11" color="white" align="center" width="35"></a-text>
+                    <a-box position="15 3 -15" depth="12" height="6" width="18" color="#FFB74D"></a-box>
+                    <a-box position="15 3 -28" depth="12" height="6" width="18" color="#FFB74D"></a-box>
+                    <a-cylinder position="0 0.1 -35" radius="15" height="0.2" color="#8BC34A"></a-cylinder>
+                    <a-text value="Playground" position="0 1 -35" color="#333" align="center"></a-text>
+                    <a-camera position="0 1.6 5"></a-camera>
+                </a-scene>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modals -->
+<div id="learnersListModal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="learnersListTitle">Learners Report</h3>
+        <p id="learnersListSchool"></p>
+        <div style="margin:20px 0;">
+            <button class="btn-primary no-print" onclick="window.print()">Print</button>
+            <button class="btn-primary no-print" onclick="exportToPDF()">Download PDF</button>
+            <button class="btn-primary no-print" onclick="exportToExcel()">Download Excel</button>
+            <button class="btn-primary no-print" onclick="exportCurrentList()">Export CSV</button>
+            <button class="btn-danger no-print" onclick="closeModal('learnersListModal')">Close</button>
+        </div>
+        <table>
+            <thead><tr><th>No</th><th>Code</th><th>Name</th><th>Father</th><th>Mother</th><th>Class</th><th>Gender</th><th>Due</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+            <tbody id="learnersListTable"></tbody>
+        </table>
+        <p style="margin-top:20px; text-align:right;">Total: <strong id="totalLearnersCount">0</strong> learners</p>
+    </div>
+</div>
+<div id="paymentHistoryModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Payment History - <span id="phName"></span> (<span id="phRegNo"></span>)</h3>
+        <table>
+            <thead><tr><th>Date</th><th>Amount</th><th>Reason</th><th>Actions</th></tr></thead>
+            <tbody id="paymentHistoryTable"></tbody>
+        </table>
+        <button class="btn-danger" style="margin-top:20px;" onclick="closeModal('paymentHistoryModal')">Close</button>
+    </div>
+</div>
+<div id="addLearnerModal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="learnerModalTitle">Add Learner</h3>
+        <form id="addLearnerForm">
+            <label>SDMS Code</label><input type="text" id="learnerRegNo" required>
+            <label>Name</label><input type="text" id="learnerName" required>
+            <label>Father's Name</label><input type="text" id="learnerFatherName">
+            <label>Mother's Name</label><input type="text" id="learnerMotherName">
+            <label>Gender</label>
+            <select id="learnerGender" required>
+                <option value="">Select</option>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+            </select>
+            <label>Class</label><select id="learnerClass" required><option value="">Select</option></select>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="submit" class="btn-success">Save</button>
+                <button type="button" class="btn-danger" onclick="closeModal('addLearnerModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="addStaffModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Add Staff</h3>
+        <form id="addStaffForm">
+            <label>Code</label><input type="text" id="staffRegNo" required>
+            <label>Name</label><input type="text" id="staffName" required>
+            <label>Gender</label>
+            <select id="staffGender" required>
+                <option value="">Select</option>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+            </select>
+            <label>Role</label><input type="text" id="staffRole" placeholder="e.g. Teacher, Head Teacher" required>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="submit" class="btn-success">Save</button>
+                <button type="button" class="btn-danger" onclick="closeModal('addStaffModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="addSchoolModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Add New School</h3>
+        <form id="addSchoolForm">
+            <label>School Name</label><input type="text" id="schoolNameInput" required>
+            <label>SDMS School Code</label><input type="text" id="schoolCodeInput" placeholder="e.g. GS001" required style="text-transform:uppercase;">
+            <label>Province</label><input type="text" id="schoolProvinceInput" required>
+            <label>District</label><input type="text" id="schoolDistrictInput" required>
+            <label>Sector</label><input type="text" id="schoolSectorInput" required>
+            <label>Head Teacher</label>
+            <select id="schoolHeadTeacherInput">
+                <option value="">None</option>
+            </select>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="submit" class="btn-success">Save</button>
+                <button type="button" class="btn-danger" onclick="closeModal('addSchoolModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="editSchoolModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Edit School Details</h3>
+        <form id="editSchoolForm">
+            <label>School Name</label><input type="text" id="editSchoolName" required>
+            <label>SDMS School Code</label><input type="text" id="editSchoolCode" required style="text-transform:uppercase;">
+            <label>Province</label><input type="text" id="editProvince" required>
+            <label>District</label><input type="text" id="editDistrict" required>
+            <label>Sector</label><input type="text" id="editSector" required>
+            <label>Head Teacher</label>
+            <select id="editHeadTeacher"></select>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="submit" class="btn-success">Update</button>
+                <button type="button" class="btn-danger" onclick="closeModal('editSchoolModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="feesModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Edit Fees Structure - Term <span id="feesModalTerm">1</span></h3>
+        <div class="fees-grid">
+            <div class="fees-group" data-group="nursery"><h4>Nursery (N1-N3)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+            <div class="fees-group" data-group="lower"><h4>Lower Primary (P1-P2)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+            <div class="fees-group" data-group="upper"><h4>Upper Primary (P3-P6)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+            <div class="fees-group" data-group="secondary"><h4>Secondary (S1-S6)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+        </div>
+        <div style="text-align:right;">
+            <button class="btn-success" onclick="saveFeesStructure()">Save</button>
+            <button class="btn-danger" onclick="closeModal('feesModal')">Cancel</button>
+        </div>
+    </div>
+</div>
+<div id="paymentModal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="paymentModalTitle">Record Payment for <span id="payName"></span> (<span id="payRegNo"></span>)</h3>
+        <form id="paymentForm">
+            <label>Amount (RWF)</label><input type="number" id="payAmount" required min="1">
+            <label>Reason</label><select id="payReason" required></select>
+            <label>Date</label><input type="date" id="payDate" required>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="submit" class="btn-success">Save</button>
+                <button type="button" class="btn-danger" onclick="closeModal('paymentModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+// ======================== DATA & STATE ========================
+let currentSchoolId = localStorage.getItem('usms_current_school') || null;
+let currentRole = '';
+let schools = JSON.parse(localStorage.getItem('usms_schools') || JSON.stringify([
+    { id: "demo2025", name: "GS Demo Rwanda 2025", sdmsCode: "GSDEM025", province: "Kigali", district: "Gasabo", sector: "Remera", headTeacherRegNo: "" }
+]));
+const defaultFees = {
+    1: {
+        nursery: [{name: "School Fees", amount: 35000}],
+        lower: [{name: "School Fees", amount: 45000}],
+        upper: [{name: "School Fees", amount: 55000}],
+        secondary: [{name: "School Fees", amount: 90000}]
+    },
+    2: {
+        nursery: [{name: "School Fees", amount: 35000}],
+        lower: [{name: "School Fees", amount: 45000}],
+        upper: [{name: "School Fees", amount: 55000}],
+        secondary: [{name: "School Fees", amount: 90000}]
+    },
+    3: {
+        nursery: [{name: "School Fees", amount: 35000}],
+        lower: [{name: "School Fees", amount: 45000}],
+        upper: [{name: "School Fees", amount: 55000}],
+        secondary: [{name: "School Fees", amount: 90000}]
+    }
+};
+let currentYear = '2025-2026';
+let currentTerm = 1;
+let learners = [], staff = [], payments = [], classes = [], feesStructure = defaultFees;
+let learnersMap = new Map();
+let staffMap = new Map();
+let currentChart = null;
+let currentListFilter = 'all';
+let currentListClass = '';
+let paymentsMap = new Map(); // regNo -> array of payments (for current term)
+let paidMap = new Map(); // regNo -> total paid (for current term)
+let learnerPage = 1;
+const pageSize = 50;
+let searchTimeout = null;
+// ======================== AUTH & INITIALIZATION ========================
+function login() {
+    const username = document.getElementById('username').value.trim().toLowerCase();
+    const password = document.getElementById('password').value;
+    if (password !== '1234') {
+        alert('Invalid password.');
+        return;
+    }
+    if (username === 'admin' || username === 'finance') {
+        currentRole = username;
+        document.getElementById('currentUser').textContent = username.charAt(0).toUpperCase() + username.slice(1);
+    } else {
+        // Assume username is regNo for head teacher
+        let found = false;
+        let assignedSchoolId = null;
+        schools.forEach(s => {
+            const tempId = currentSchoolId;
+            currentSchoolId = s.id;
+            loadSchoolData();
+            const ht = staff.find(st => st.regNo.toLowerCase() === username && st.role === 'Head Teacher');
+            if (ht) {
+                found = true;
+                assignedSchoolId = s.id;
+                currentRole = 'headteacher';
+                document.getElementById('currentUser').textContent = ht.name;
+            }
+            currentSchoolId = tempId;
+        });
+        if (!found) {
+            alert('Invalid credentials. For head teachers, use your staff code.');
+            return;
+        }
+        currentSchoolId = assignedSchoolId;
+    }
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    populateSchoolSelector();
+    switchSchool(currentSchoolId || schools[0].id);
+    if (currentRole === 'headteacher') {
+        document.getElementById('schoolSelector').style.display = 'none';
+        document.getElementById('addSchoolBtn').style.display = 'none';
+        document.getElementById('editSchoolBtn').style.display = 'inline-block'; // Allow editing their own school
+    } else {
+        document.getElementById('schoolSelector').style.display = 'inline-block';
+        document.getElementById('addSchoolBtn').style.display = 'inline-block';
+        document.getElementById('editSchoolBtn').style.display = 'inline-block';
+    }
+    setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 300); // Reduced timeout for faster feel
+}
+function logout() {
+    currentRole = '';
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+}
+// ======================== SCHOOL MANAGEMENT ========================
+function getCurrentSchool() {
+    return schools.find(s => s.id === currentSchoolId);
+}
+function getKey(key) {
+    return currentSchoolId ? `usms_${currentSchoolId}_${currentYear}_${key}` : null;
+}
+function loadSchoolData() {
+    if (!currentSchoolId) return;
+    learners = JSON.parse(localStorage.getItem(getKey('learners')) || '[]');
+    staff = JSON.parse(localStorage.getItem(getKey('staff')) || '[]');
+    payments = JSON.parse(localStorage.getItem(getKey('payments')) || '[]');
+    classes = JSON.parse(localStorage.getItem(getKey('classes')) || JSON.stringify(["N1","N2","N3","P1","P2","P3","P4","P5","P6","S1","S2","S3","S4","S5","S6"]));
+    feesStructure = JSON.parse(localStorage.getItem(getKey('fees')) || JSON.stringify(defaultFees));
+    currentTerm = parseInt(localStorage.getItem(getKey('term')) || '1');
+    buildLearnersMap();
+    buildStaffMap();
+    buildPaymentsCache();
+}
+function saveSchoolData() {
+    if (!currentSchoolId) return;
+    localStorage.setItem(getKey('learners'), JSON.stringify(learners));
+    localStorage.setItem(getKey('staff'), JSON.stringify(staff));
+    localStorage.setItem(getKey('payments'), JSON.stringify(payments));
+    localStorage.setItem(getKey('classes'), JSON.stringify(classes));
+    localStorage.setItem(getKey('fees'), JSON.stringify(feesStructure));
+    localStorage.setItem(getKey('term'), currentTerm.toString());
+}
+function buildLearnersMap() {
+    learnersMap.clear();
+    learners.forEach(l => learnersMap.set(l.regNo, l));
+}
+function buildStaffMap() {
+    staffMap.clear();
+    staff.forEach(s => staffMap.set(s.regNo, s));
+}
+function populateSchoolSelector() {
+    const select = document.getElementById('schoolSelector');
+    select.innerHTML = '<option value="">Select School</option>';
+    schools.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        if (s.id === currentSchoolId) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+function switchSchool(id) {
+    if (currentRole === 'headteacher' && id !== currentSchoolId) {
+        alert('You can only access your assigned school.');
+        return;
+    }
+    if (!id) return;
+    currentSchoolId = id;
+    localStorage.setItem('usms_current_school', id);
+    const school = getCurrentSchool();
+    document.getElementById('schoolName').textContent = school.name;
+    document.getElementById('schoolCode').textContent = school.sdmsCode ? `SDMS Code: ${school.sdmsCode}` : '';
+    const ht = staff.find(s => s.regNo === school.headTeacherRegNo);
+    document.getElementById('headTeacher').textContent = ht ? `Head Teacher: ${ht.name}` : '';
+    document.getElementById('schoolLocation').textContent = `${school.province} • ${school.district} • ${school.sector}`;
+    document.getElementById('editSchoolBtn').style.display = 'inline-block';
+    loadSchoolData();
+    updateDisplays();
+    renderAll();
+    populateHeadTeacherOptions('editHeadTeacher');
+    populateHeadTeacherOptions('schoolHeadTeacherInput');
+}
+function showAddSchoolModal() {
+    if (currentRole === 'headteacher') {
+        alert('You cannot add schools.');
+        return;
+    }
+    document.getElementById('addSchoolForm').reset();
+    document.getElementById('schoolHeadTeacherInput').innerHTML = '<option value="">None</option>'; // Since new school, no staff yet
+    document.getElementById('addSchoolModal').classList.remove('hidden');
+}
+function showEditSchoolModal() {
+    const school = getCurrentSchool();
+    if (!school) return;
+    document.getElementById('editSchoolName').value = school.name;
+    document.getElementById('editSchoolCode').value = school.sdmsCode || '';
+    document.getElementById('editProvince').value = school.province;
+    document.getElementById('editDistrict').value = school.district;
+    document.getElementById('editSector').value = school.sector;
+    populateHeadTeacherOptions('editHeadTeacher');
+    document.getElementById('editHeadTeacher').value = school.headTeacherRegNo || '';
+    document.getElementById('editSchoolModal').classList.remove('hidden');
+}
+document.getElementById('addSchoolForm').onsubmit = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('schoolNameInput').value.trim();
+    const sdmsCode = document.getElementById('schoolCodeInput').value.trim().toUpperCase();
+    const province = document.getElementById('schoolProvinceInput').value.trim();
+    const district = document.getElementById('schoolDistrictInput').value.trim();
+    const sector = document.getElementById('schoolSectorInput').value.trim();
+    const headTeacherRegNo = document.getElementById('schoolHeadTeacherInput').value || '';
+    if (!name || !sdmsCode || !province || !district || !sector) return alert('All fields except Head Teacher are required');
+    const id = name.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now();
+    schools.push({id, name, sdmsCode, province, district, sector, headTeacherRegNo});
+    localStorage.setItem('usms_schools', JSON.stringify(schools));
+    currentSchoolId = id;
+    localStorage.setItem('usms_current_school', id);
+    populateSchoolSelector();
+    closeModal('addSchoolModal');
+    switchSchool(id);
+};
+document.getElementById('editSchoolForm').onsubmit = function(e) {
+    e.preventDefault();
+    const school = getCurrentSchool();
+    if (!school) return;
+    school.name = document.getElementById('editSchoolName').value.trim();
+    school.sdmsCode = document.getElementById('editSchoolCode').value.trim().toUpperCase();
+    school.province = document.getElementById('editProvince').value.trim();
+    school.district = document.getElementById('editDistrict').value.trim();
+    school.sector = document.getElementById('editSector').value.trim();
+    school.headTeacherRegNo = document.getElementById('editHeadTeacher').value || '';
+    localStorage.setItem('usms_schools', JSON.stringify(schools));
+    closeModal('editSchoolModal');
+    switchSchool(currentSchoolId);
+};
+function populateHeadTeacherOptions(selectId) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">None</option>';
+    staff.filter(s => s.role === 'Head Teacher').forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.regNo;
+        opt.textContent = `${s.regNo} - ${s.name}`;
+        select.appendChild(opt);
+    });
+}
+// ======================== UI NAVIGATION ========================
+function showTab(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#navMenu button').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelector(`#navMenu button[onclick="showTab('${id}')"]`).classList.add('active');
+    if (id === 'financeTab') renderFinanceChart();
+}
+function changeYear(y) {
+    currentYear = y;
+    loadSchoolData();
+    updateDisplays();
+    renderAll();
+}
+function changeTerm(t) {
+    currentTerm = parseInt(t);
+    saveSchoolData();
+    updateDisplays();
+    renderAll();
+}
+function updateDisplays() {
+    document.getElementById('dashYear').textContent = currentYear;
+    document.getElementById('yearSelector').value = currentYear;
+    document.getElementById('dashTerm').textContent = currentTerm;
+    document.getElementById('termSelector').value = currentTerm;
+    document.getElementById('feesTermDisplay').textContent = currentTerm;
+    document.getElementById('feesModalTerm').textContent = currentTerm;
+}
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+// ======================== FEES MANAGEMENT ========================
+function getGroup(className) {
+    if (!className) return null;
+    const lc = className.toLowerCase();
+    if (/n[1-3]/i.test(lc)) return 'nursery';
+    if (/p[1-2]/i.test(lc)) return 'lower';
+    if (/p[3-6]/i.test(lc)) return 'upper';
+    if (/s[1-6]/i.test(lc)) return 'secondary';
+    return null;
+}
+function getFeesDue(className) {
+    const group = getGroup(className);
+    if (!group) return 0;
+    const items = feesStructure[currentTerm][group] || [];
+    return items.reduce((sum, item) => sum + (item.amount || 0), 0);
+}
+function addFeeItemRow(container, name = '', amount = 0) {
+    const row = document.createElement('div');
+    row.className = 'fee-item-row';
+    row.innerHTML = `
+        <input type="text" class="fee-name" placeholder="Fee Name" value="${name}">
+        <input type="number" class="fee-amount" placeholder="Amount" value="${amount}">
+        <button class="btn-sm btn-danger remove-fee-item">Remove</button>
+    `;
+    row.querySelector('.remove-fee-item').onclick = function() {
+        row.remove();
+    };
+    container.appendChild(row);
+}
+function showFeesModal() {
+    document.getElementById('feesModalTerm').textContent = currentTerm;
+    const groups = ['nursery', 'lower', 'upper', 'secondary'];
+    groups.forEach(group => {
+        const container = document.querySelector(`.fees-group[data-group="${group}"] .fee-items`);
+        container.innerHTML = '';
+        const items = feesStructure[currentTerm][group] || [];
+        items.forEach(item => {
+            addFeeItemRow(container, item.name, item.amount);
+        });
+        if (items.length === 0) {
+            addFeeItemRow(container);
+        }
+    });
+    document.querySelectorAll('.add-fee-item').forEach(btn => {
+        btn.onclick = function() {
+            const container = this.previousElementSibling;
+            addFeeItemRow(container);
+        };
+    });
+    document.getElementById('feesModal').classList.remove('hidden');
+}
+function saveFeesStructure() {
+    const groups = ['nursery', 'lower', 'upper', 'secondary'];
+    groups.forEach(group => {
+        const container = document.querySelector(`.fees-group[data-group="${group}"] .fee-items`);
+        const items = [];
+        container.querySelectorAll('.fee-item-row').forEach(row => {
+            const name = row.querySelector('.fee-name').value.trim();
+            const amt = parseInt(row.querySelector('.fee-amount').value) || 0;
+            if (name && amt > 0) {
+                items.push({name, amount: amt});
+            }
+        });
+        feesStructure[currentTerm][group] = items;
+    });
+    saveSchoolData();
+    closeModal('feesModal');
+    renderFeesSummary();
+    renderAll();
+}
+function renderFeesSummary() {
+    const f = feesStructure[currentTerm];
+    const groups = ['nursery', 'lower', 'upper', 'secondary'];
+    groups.forEach(g => {
+        const items = f[g] || [];
+        const total = items.reduce((s, i) => s + i.amount, 0);
+        document.getElementById(g + 'Total').textContent = total.toLocaleString();
+        const details = document.getElementById(g + 'Items');
+        details.innerHTML = items.map(i => `<div>${i.name}: RWF ${i.amount.toLocaleString()}</div>`).join('');
+    });
+}
+// ======================== PAYMENTS & LEARNERS ========================
+function buildPaymentsCache() {
+    paymentsMap.clear();
+    paidMap.clear();
+    payments.filter(p => p.term === currentTerm).forEach(p => {
+        if (!paymentsMap.has(p.regNo)) {
+            paymentsMap.set(p.regNo, []);
+        }
+        paymentsMap.get(p.regNo).push(p);
+    });
+    paymentsMap.forEach((pays, regNo) => {
+        const totalPaid = pays.reduce((s, p) => s + p.amount, 0);
+        paidMap.set(regNo, totalPaid);
+    });
+}
+function getLearnerPayments(regNo) {
+    return paymentsMap.get(regNo) || [];
+}
+function getLearnerPaid(regNo) {
+    return paidMap.get(regNo) || 0;
+}
+function showPaymentModal(regNo, name, paymentId = null) {
+    document.getElementById('payName').textContent = name;
+    document.getElementById('payRegNo').textContent = regNo;
+    const learner = learnersMap.get(regNo);
+    if (!learner) return;
+    const group = getGroup(learner.class);
+    const items = feesStructure[currentTerm][group] || [];
+    const select = document.getElementById('payReason');
+    select.innerHTML = '';
+    if (items.length === 0) {
+        select.innerHTML = '<option value="School Fees">School Fees</option>';
+    } else {
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            opt.textContent = item.name;
+            select.appendChild(opt);
+        });
+    }
+    const form = document.getElementById('paymentForm');
+    form.dataset.regNo = regNo;
+    if (paymentId) {
+        const payment = payments.find(p => p.id === parseInt(paymentId));
+        if (payment) {
+            document.getElementById('paymentModalTitle').textContent = 'Edit Payment for ';
+            document.getElementById('payAmount').value = payment.amount;
+            document.getElementById('payReason').value = payment.reason;
+            document.getElementById('payDate').value = payment.date;
+            form.dataset.paymentId = paymentId;
+        }
+    } else {
+        document.getElementById('paymentModalTitle').textContent = 'Record Payment for ';
+        document.getElementById('payAmount').value = '';
+        document.getElementById('payDate').value = new Date().toISOString().split('T')[0];
+        delete form.dataset.paymentId;
+    }
+    document.getElementById('paymentModal').classList.remove('hidden');
+}
+function editPayment(paymentId, regNo, name) {
+    showPaymentModal(regNo, name, paymentId);
+}
+function deletePayment(paymentId, regNo, name) {
+    if (confirm('Delete this payment?')) {
+        payments = payments.filter(p => p.id !== parseInt(paymentId));
+        buildPaymentsCache();
+        saveSchoolData();
+        showPaymentHistory(regNo, name);
+        renderAll();
+    }
+}
+function showPaymentHistory(regNo, name) {
+    document.getElementById('phName').textContent = name;
+    document.getElementById('phRegNo').textContent = regNo;
+    const tbody = document.getElementById('paymentHistoryTable');
+    const pays = getLearnerPayments(regNo);
+    let rows = [];
+    if (pays.length === 0) {
+        rows.push('<tr><td colspan="4" style="text-align:center;">No payments recorded</td></tr>');
+    } else {
+        pays.forEach(p => {
+            rows.push(`<tr><td>${p.date}</td><td>RWF ${p.amount.toLocaleString()}</td><td>${p.reason}</td><td><button class="btn-sm btn-primary" onclick="editPayment('${p.id}', '${p.regNo}', '${name.replace(/'/g, "\\'")}')">Edit</button> <button class="btn-sm btn-danger" onclick="deletePayment('${p.id}', '${p.regNo}', '${name.replace(/'/g, "\\'")}')">Delete</button></td></tr>`);
+        });
+    }
+    tbody.innerHTML = rows.join('');
+    document.getElementById('paymentHistoryModal').classList.remove('hidden');
+}
+function showLearnersListModal(filter = 'all', specificClass = '') {
+    currentListFilter = filter;
+    currentListClass = specificClass;
+    const school = getCurrentSchool();
+    let title = filter.charAt(0).toUpperCase() + filter.slice(1) + ' Learners';
+    if (specificClass) title += ` in ${specificClass}`;
+    if (filter === 'all' && specificClass) title = `Learners in ${specificClass}`;
+    document.getElementById('learnersListTitle').textContent = `${title} - Term ${currentTerm}`;
+    document.getElementById('learnersListSchool').textContent = school ? school.name : '';
+    const tbody = document.getElementById('learnersListTable');
+    let list = learners;
+    if (specificClass) {
+        list = list.filter(l => l.class === specificClass);
+    }
+    if (filter !== 'all') {
+        list = list.filter(l => {
+            const due = getFeesDue(l.class);
+            const paid = getLearnerPaid(l.regNo);
+            if (filter === 'paid') return paid >= due;
+            if (filter === 'partial') return paid > 0 && paid < due;
+            if (filter === 'pending') return paid === 0;
+            return true;
+        });
+    }
+    let totalDue = 0, totalPaid = 0, totalBalance = 0;
+    let rows = [];
+    list.forEach((l, i) => {
+        const due = getFeesDue(l.class);
+        const paid = getLearnerPaid(l.regNo);
+        const balance = due - paid;
+        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+        totalDue += due;
+        totalPaid += paid;
+        totalBalance += balance;
+        rows.push(`<tr>
+            <td>${i + 1}</td>
+            <td>${l.regNo}</td>
+            <td>${l.name}</td>
+            <td>${l.fatherName || '—'}</td>
+            <td>${l.motherName || '—'}</td>
+            <td>${l.class}</td>
+            <td>${l.gender === 'M' ? 'Male' : 'Female'}</td>
+            <td>RWF ${due.toLocaleString()}</td>
+            <td>RWF ${paid.toLocaleString()}</td>
+            <td>RWF ${balance.toLocaleString()}</td>
+            <td>${status}</td>
+        </tr>`);
+    });
+    rows.push(`<tr style="font-weight:bold;"><td colspan="7">Totals</td><td>RWF ${totalDue.toLocaleString()}</td><td>RWF ${totalPaid.toLocaleString()}</td><td>RWF ${totalBalance.toLocaleString()}</td><td></td></tr>`);
+    tbody.innerHTML = rows.join('');
+    document.getElementById('totalLearnersCount').textContent = list.length;
+    document.getElementById('learnersListModal').classList.remove('hidden');
+}
+function renderLearners(page = learnerPage) {
+    learnerPage = page;
+    const search = document.getElementById('learnerSearch').value.toLowerCase();
+    const classFilter = document.getElementById('classFilter').value;
+    const tbody = document.getElementById('learnerList');
+    let filtered = learners.filter(l =>
+        (l.regNo.toLowerCase().includes(search) || l.name.toLowerCase().includes(search)) &&
+        (!classFilter || l.class === classFilter)
+    );
+    filtered.sort((a, b) => a.regNo.localeCompare(b.regNo));
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const paginated = filtered.slice(start, end);
+    let rows = [];
+    if (total === 0) {
+        rows.push('<tr><td colspan="12" style="text-align:center;padding:60px;color:#999;">No learners found</td></tr>');
+    } else {
+        paginated.forEach(l => {
+            const due = getFeesDue(l.class);
+            const paid = getLearnerPaid(l.regNo);
+            const balance = due - paid;
+            const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+            const statusClass = `status-${status.toLowerCase()}`;
+            const count = (paymentsMap.get(l.regNo) || []).length;
+            rows.push(`
+                <tr>
+                    <td><strong>${l.regNo}</strong></td>
+                    <td>${l.name}</td>
+                    <td>${l.fatherName || '—'}</td>
+                    <td>${l.motherName || '—'}</td>
+                    <td>${l.class || '—'}</td>
+                    <td>${l.gender === 'M' ? 'Male' : 'Female'}</td>
+                    <td>RWF ${due.toLocaleString()}</td>
+                    <td>RWF ${paid.toLocaleString()}</td>
+                    <td>RWF ${balance.toLocaleString()}</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    <td><span class="payment-details" onclick="showPaymentHistory('${l.regNo}', '${l.name.replace(/'/g, "\\'")}')">View (${count})</span></td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn-sm btn-primary" onclick="editLearner('${l.regNo}')">Edit</button>
+                        <button class="btn-sm btn-pay" onclick="showPaymentModal('${l.regNo}', '${l.name.replace(/'/g, "\\'")}')">Pay</button>
+                        <button class="btn-sm btn-danger" onclick="deleteLearner('${l.regNo}')">Delete</button>
+                    </td>
+                </tr>`);
+        });
+    }
+    tbody.innerHTML = rows.join('');
+    renderPagination(totalPages, page);
+}
+function renderPagination(totalPages, currentPage) {
+    const pagination = document.getElementById('learnerPagination');
+    pagination.innerHTML = '';
+    const prevPrev = document.createElement('button');
+    prevPrev.textContent = '<<';
+    prevPrev.disabled = currentPage === 1;
+    prevPrev.onclick = () => renderLearners(1);
+    pagination.appendChild(prevPrev);
+    const prev = document.createElement('button');
+    prev.textContent = '<';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => renderLearners(currentPage - 1);
+    pagination.appendChild(prev);
+    const pageSpan = document.createElement('span');
+    pageSpan.textContent = `Page ${currentPage} of ${totalPages}`;
+    pagination.appendChild(pageSpan);
+    const next = document.createElement('button');
+    next.textContent = '>';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => renderLearners(currentPage + 1);
+    pagination.appendChild(next);
+    const nextNext = document.createElement('button');
+    nextNext.textContent = '>>';
+    nextNext.disabled = currentPage === totalPages;
+    nextNext.onclick = () => renderLearners(totalPages);
+    pagination.appendChild(nextNext);
+}
+// ======================== OTHER FUNCTIONS ========================
+function renderDashboard() {
+    let totalLearners = 0, boys = 0, girls = 0, totalDue = 0;
+    learners.forEach(l => {
+        totalLearners++;
+        if (l.gender === 'M') boys++;
+        else if (l.gender === 'F') girls++;
+        totalDue += getFeesDue(l.class);
+    });
+    const totalPaid = Array.from(paidMap.values()).reduce((s, p) => s + p, 0);
+    const rate = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
+    document.getElementById('dashTotalLearners').textContent = totalLearners;
+    document.getElementById('dashBoys').textContent = boys;
+    document.getElementById('dashGirls').textContent = girls;
+    document.getElementById('dashTotalStaff').textContent = staff.length;
+    document.getElementById('dashFeesCollected').textContent = 'RWF ' + totalPaid.toLocaleString();
+    document.getElementById('dashFeesRate').textContent = rate + '%';
+    document.getElementById('dashTotalClasses').textContent = classes.length;
+}
+function renderFinanceChart() {
+    const totalDue = learners.reduce((s, l) => s + getFeesDue(l.class), 0);
+    const totalPaid = Array.from(paidMap.values()).reduce((s, p) => s + p, 0);
+    const outstanding = totalDue - totalPaid;
+    document.getElementById('totalCollected').textContent = totalPaid.toLocaleString();
+    document.getElementById('totalOutstanding').textContent = outstanding.toLocaleString();
+    if (currentChart) currentChart.destroy();
+    currentChart = new Chart(document.getElementById('feesChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Collected', 'Outstanding'],
+            datasets: [{ data: [totalPaid, outstanding || 1], backgroundColor: ['#27ae60', '#e74c3c'] }]
+        },
+        options: { responsive: true }
+    });
+}
+function renderStaff() {
+    const tbody = document.getElementById('staffList');
+    let rows = [];
+    if (staff.length === 0) {
+        rows.push('<tr><td colspan="5" style="text-align:center;padding:60px;color:#999;">No staff registered</td></tr>');
+    } else {
+        staff.forEach((s, i) => {
+            rows.push(`<tr>
+                <td>${s.regNo}</td>
+                <td>${s.name}</td>
+                <td>${s.gender === 'M' ? 'Male' : 'Female'}</td>
+                <td>${s.role}</td>
+                <td>
+                    <button class="btn-sm btn-primary" onclick="editStaff(${i})">Edit</button>
+                    <button class="btn-sm btn-danger" onclick="deleteStaff(${i})">Delete</button>
+                </td>
+            </tr>`);
+        });
+    }
+    tbody.innerHTML = rows.join('');
+}
+function renderClasses() {
+    const tbody = document.getElementById('classList');
+    let rows = [];
+    if (classes.length === 0) {
+        rows.push('<tr><td colspan="3" style="text-align:center;padding:80px;color:#999;font-size:18px;">No classes created yet.<br><br>Click "Add New Class" to begin.</td></tr>');
+        document.getElementById('totalClassesCount').textContent = '0';
+    } else {
+        classes.sort().forEach(c => {
+            const count = learners.filter(l => l.class === c).length;
+            const plural = count !== 1 ? 's' : '';
+            rows.push(`
+                <tr>
+                    <td style="font-size:20px;font-weight:600;color:var(--primary);">${c}</td>
+                    <td style="text-align:center;font-size:28px;font-weight:bold;color:${count > 0 ? 'var(--success)' : '#999'};">
+                        ${count}
+                        <div style="font-size:14px;color:#666;margin-top:5px;">learner${plural}</div>
+                    </td>
+                    <td class="class-actions">
+                        <button class="btn-sm btn-success" onclick="showLearnersListModal('all', '${c}')"><i class="fas fa-users"></i> All</button>
+                        <button class="btn-sm btn-success" onclick="showLearnersListModal('paid', '${c}')"><i class="fas fa-check"></i> Paid</button>
+                        <button class="btn-sm btn-warning" onclick="showLearnersListModal('partial', '${c}')"><i class="fas fa-exclamation"></i> Partial</button>
+                        <button class="btn-sm btn-danger" onclick="showLearnersListModal('pending', '${c}')"><i class="fas fa-times"></i> Pending</button>
+                        <button class="btn-sm btn-primary" onclick="editClassName('${c}')"><i class="fas fa-edit"></i> Rename</button>
+                        <button class="btn-sm btn-danger" onclick="deleteClass('${c}')"><i class="fas fa-trash"></i> Delete</button>
+                    </td>
+                </tr>`);
+        });
+        document.getElementById('totalClassesCount').textContent = classes.length;
+    }
+    tbody.innerHTML = rows.join('');
+}
+function populateClassFilter() {
+    const select = document.getElementById('classFilter');
+    select.innerHTML = '<option value="">All Classes</option>';
+    classes.sort().forEach(c => {
+        select.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+}
+function populateClassDropdown() {
+    const select = document.getElementById('learnerClass');
+    select.innerHTML = '<option value="">Select Class</option>';
+    classes.sort().forEach(c => {
+        select.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+}
+function renderAll() {
+    renderDashboard();
+    renderLearners();
+    renderStaff();
+    renderClasses();
+    renderFeesSummary();
+    populateClassFilter();
+    populateClassDropdown();
+    if (document.getElementById('financeTab').classList.contains('active')) renderFinanceChart();
+}
+function showAddLearnerModal() {
+    document.getElementById('learnerModalTitle').textContent = 'Add Learner';
+    document.getElementById('addLearnerForm').reset();
+    delete document.getElementById('addLearnerForm').dataset.editIndex;
+    populateClassDropdown();
+    document.getElementById('learnerRegNo').readOnly = false;
+    document.getElementById('addLearnerModal').classList.remove('hidden');
+}
+function editLearner(regNo) {
+    if (!learnersMap.has(regNo)) return;
+    const l = learnersMap.get(regNo);
+    const index = learners.findIndex(learner => learner.regNo === regNo);
+    document.getElementById('learnerRegNo').value = l.regNo;
+    document.getElementById('learnerName').value = l.name;
+    document.getElementById('learnerFatherName').value = l.fatherName || '';
+    document.getElementById('learnerMotherName').value = l.motherName || '';
+    document.getElementById('learnerGender').value = l.gender;
+    document.getElementById('learnerClass').value = l.class;
+    document.getElementById('addLearnerForm').dataset.editIndex = index;
+    document.getElementById('learnerModalTitle').textContent = 'Edit Learner';
+    populateClassDropdown();
+    document.getElementById('learnerRegNo').readOnly = true;
+    document.getElementById('addLearnerModal').classList.remove('hidden');
+}
+function deleteLearner(regNo) {
+    if (confirm('Delete this learner and all their payments?')) {
+        learners = learners.filter(l => l.regNo !== regNo);
+        learnersMap.delete(regNo);
+        payments = payments.filter(p => p.regNo !== regNo);
+        buildPaymentsCache();
+        saveSchoolData();
+        renderAll();
+    }
+}
+document.getElementById('addLearnerForm').onsubmit = function(e) {
+    e.preventDefault();
+    const regNo = document.getElementById('learnerRegNo').value.trim().toUpperCase();
+    const name = document.getElementById('learnerName').value.trim();
+    const fatherName = document.getElementById('learnerFatherName').value.trim();
+    const motherName = document.getElementById('learnerMotherName').value.trim();
+    const gender = document.getElementById('learnerGender').value;
+    const cls = document.getElementById('learnerClass').value;
+    if (!regNo || !name || !gender || !cls) return alert('Required fields: SDMS Code, Name, Gender, Class');
+    const editIndex = parseInt(this.dataset.editIndex);
+    if (!isNaN(editIndex)) {
+        learners[editIndex] = {regNo, name, fatherName, motherName, gender, class: cls};
+        learnersMap.set(regNo, learners[editIndex]);
+    } else {
+        if (learnersMap.has(regNo)) return alert('SDMS Code already exists');
+        const newLearner = {regNo, name, fatherName, motherName, gender, class: cls};
+        learners.push(newLearner);
+        learnersMap.set(regNo, newLearner);
+    }
+    saveSchoolData();
+    closeModal('addLearnerModal');
+    renderAll();
+};
+function showAddStaffModal() {
+    document.getElementById('addStaffForm').reset();
+    delete document.getElementById('addStaffForm').dataset.index;
+    document.getElementById('staffRegNo').readOnly = false;
+    document.getElementById('addStaffModal').classList.remove('hidden');
+}
+function editStaff(i) {
+    const s = staff[i];
+    document.getElementById('staffRegNo').value = s.regNo;
+    document.getElementById('staffName').value = s.name;
+    document.getElementById('staffGender').value = s.gender;
+    document.getElementById('staffRole').value = s.role;
+    document.getElementById('addStaffForm').dataset.index = i;
+    document.getElementById('staffRegNo').readOnly = true;
+    document.getElementById('addStaffModal').classList.remove('hidden');
+}
+function deleteStaff(i) {
+    if (confirm('Delete this staff member?')) {
+        const regNo = staff[i].regNo;
+        staff.splice(i, 1);
+        staffMap.delete(regNo);
+        saveSchoolData();
+        renderStaff();
+    }
+}
+document.getElementById('addStaffForm').onsubmit = function(e) {
+    e.preventDefault();
+    const regNo = document.getElementById('staffRegNo').value.trim().toUpperCase();
+    const name = document.getElementById('staffName').value.trim();
+    const gender = document.getElementById('staffGender').value;
+    const role = document.getElementById('staffRole').value.trim();
+    if (!regNo || !name || !gender || !role) return alert('All fields required');
+    const index = this.dataset.index;
+    if (index !== undefined) {
+        staff[parseInt(index)] = {regNo, name, gender, role};
+        staffMap.set(regNo, staff[parseInt(index)]);
+    } else {
+        if (staffMap.has(regNo)) return alert('Staff code already exists');
+        const newStaff = {regNo, name, gender, role};
+        staff.push(newStaff);
+        staffMap.set(regNo, newStaff);
+    }
+    saveSchoolData();
+    closeModal('addStaffModal');
+    renderAll();
+};
+function addClass() {
+    const name = prompt('Enter new class name (e.g. P1, S4, N1):').trim().toUpperCase();
+    if (!name) return;
+    if (classes.includes(name)) return alert('Class already exists');
+    classes.push(name);
+    saveSchoolData();
+    renderClasses();
+    populateClassFilter();
+    populateClassDropdown();
+}
+function editClassName(oldName) {
+    const newName = prompt('New class name:', oldName).trim().toUpperCase();
+    if (!newName || newName === oldName) return;
+    if (classes.includes(newName)) return alert('Class name already exists');
+    const index = classes.indexOf(oldName);
+    classes[index] = newName;
+    learners = learners.map(l => l.class === oldName ? {...l, class: newName} : l);
+    buildLearnersMap(); // Rebuild map since objects changed
+    saveSchoolData();
+    renderAll();
+}
+function deleteClass(c) {
+    if (confirm(`Delete class ${c}? All learners will be unassigned from this class.`)) {
+        classes = classes.filter(x => x !== c);
+        learners = learners.map(l => l.class === c ? {...l, class: ''} : l);
+        buildLearnersMap(); // Rebuild
+        saveSchoolData();
+        renderAll();
+    }
+}
+function exportLearners() {
+    let csv = 'SDMS Code,Name,Father Name,Mother Name,Class,Gender,Due,Paid,Balance,Status\n';
+    learners.forEach(l => {
+        const due = getFeesDue(l.class);
+        const paid = getLearnerPaid(l.regNo);
+        const balance = due - paid;
+        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+        csv += `${l.regNo},${l.name},${l.fatherName || ''},${l.motherName || ''},${l.class},${l.gender === 'M' ? 'Male' : 'Female'},${due},${paid},${balance},${status}\n`;
+    });
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'learners_export.csv';
+    a.click();
+}
+function exportCurrentList() {
+    let list = learners;
+    if (currentListClass) {
+        list = list.filter(l => l.class === currentListClass);
+    }
+    if (currentListFilter !== 'all') {
+        list = list.filter(l => {
+            const due = getFeesDue(l.class);
+            const paid = getLearnerPaid(l.regNo);
+            if (currentListFilter === 'paid') return paid >= due;
+            if (currentListFilter === 'partial') return paid > 0 && paid < due;
+            if (currentListFilter === 'pending') return paid === 0;
+            return true;
+        });
+    }
+    let csv = 'No,SDMS Code,Name,Father Name,Mother Name,Class,Gender,Due,Paid,Balance,Status\n';
+    let totalDue = 0, totalPaid = 0, totalBalance = 0;
+    list.forEach((l, i) => {
+        const due = getFeesDue(l.class);
+        const paid = getLearnerPaid(l.regNo);
+        const balance = due - paid;
+        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+        totalDue += due;
+        totalPaid += paid;
+        totalBalance += balance;
+        csv += `${i+1},${l.regNo},${l.name},${l.fatherName || ''},${l.motherName || ''},${l.class},${l.gender === 'M' ? 'Male' : 'Female'},${due},${paid},${balance},${status}\n`;
+    });
+    csv += `,,,,,,Totals,${totalDue},${totalPaid},${totalBalance},\n`;
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    let filename = `${currentListFilter}_learners`;
+    if (currentListClass) filename += `_${currentListClass.replace(/\s+/g, '_')}`;
+    filename += '.csv';
+    a.download = filename;
+    a.click();
+}
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const school = getCurrentSchool();
+    const title = document.getElementById('learnersListTitle').textContent;
+    doc.text(`${school.name} - ${title}`, 14, 20);
+    const table = document.getElementById('learnersListTable');
+    const rows = [];
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    rows.push(headers);
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = Array.from(tr.querySelectorAll('td')).map(td => td.textContent);
+        rows.push(row);
+    });
+    doc.autoTable({
+        head: [rows[0]],
+        body: rows.slice(1),
+        startY: 30
+    });
+    let filename = `financial_report_${currentListFilter}`;
+    if (currentListClass) filename += `_${currentListClass.replace(/\s+/g, '_')}`;
+    filename += '.pdf';
+    doc.save(filename);
+}
+function exportToExcel() {
+    const wb = XLSX.utils.book_new();
+    const ws_data = [];
+    const school = getCurrentSchool();
+    const title = document.getElementById('learnersListTitle').textContent;
+    ws_data.push([`${school.name} - ${title}`]);
+    ws_data.push([]);
+    const table = document.getElementById('learnersListTable');
+    table.querySelectorAll('tr').forEach(tr => {
+        const row = Array.from(tr.querySelectorAll('th, td')).map(cell => cell.textContent);
+        ws_data.push(row);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    let filename = `financial_report_${currentListFilter}`;
+    if (currentListClass) filename += `_${currentListClass.replace(/\s+/g, '_')}`;
+    filename += '.xlsx';
+    XLSX.writeFile(wb, filename);
+}
+function downloadLearnerTemplate() {
+    const csv = 'SDMS Code,Name,Father Name,Mother Name,Gender,Class\nRW001,Example Name,Father Name,Mother Name,M,P1\n';
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'learners_template.csv';
+    a.click();
+}
+function importLearners(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        const existingRegNos = new Set(learners.map(l => l.regNo));
+        let added = 0;
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const parts = line.split(',');
+            if (parts.length < 6) continue;
+            const regNo = parts[0].trim().toUpperCase();
+            const name = parts[1].trim();
+            const fatherName = parts[2].trim();
+            const motherName = parts[3].trim();
+            const gender = parts[4].trim().toUpperCase();
+            const cls = parts[5].trim().toUpperCase();
+            if (regNo && name && ['M','F'].includes(gender) && cls && !existingRegNos.has(regNo)) {
+                const newLearner = {regNo, name, fatherName, motherName, gender, class: cls};
+                learners.push(newLearner);
+                learnersMap.set(regNo, newLearner);
+                existingRegNos.add(regNo);
+                added++;
+            }
+        }
+        saveSchoolData();
+        alert(`Successfully imported ${added} learners`);
+        renderAll();
+    };
+    reader.readAsText(file);
+}
+function downloadPaymentsTemplate() {
+    const csv = 'regNo,amount,date,reason,term\nRW001,20000,2025-01-13,School Fees,1\n';
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payments_template.csv';
+    a.click();
+}
+function importPayments(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        let added = 0;
+        let errors = [];
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const parts = line.split(',');
+            if (parts.length < 2) continue;
+            const regNo = parts[0].trim().toUpperCase();
+            const amountStr = parts[1].trim();
+            const date = parts[2] ? parts[2].trim() : new Date().toISOString().split('T')[0];
+            const reason = parts[3] ? parts[3].trim() : 'School Fees';
+            const term = parts[4] ? parseInt(parts[4].trim()) : currentTerm;
+            const amount = parseInt(amountStr);
+            if (!learnersMap.has(regNo)) {
+                errors.push(`Learner ${regNo} not found`);
+                continue;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                errors.push(`Invalid amount for ${regNo}`);
+                continue;
+            }
+            const learner = learnersMap.get(regNo);
+            const payment = { id: Date.now(), regNo, name: learner.name, amount, reason, term, date };
+            payments.push(payment);
+            if (term === currentTerm) {
+                if (!paymentsMap.has(regNo)) {
+                    paymentsMap.set(regNo, []);
+                }
+                paymentsMap.get(regNo).push(payment);
+                paidMap.set(regNo, (paidMap.get(regNo) || 0) + amount);
+            }
+            added++;
+        }
+        saveSchoolData();
+        let message = `Successfully imported ${added} payments`;
+        if (errors.length > 0) {
+            message += `\nErrors:\n${errors.join('\n')}`;
+        }
+        alert(message);
+        renderAll();
+    };
+    reader.readAsText(file);
+}
+function exportStaff() {
+    let csv = 'Code,Name,Gender,Role\n';
+    staff.forEach(s => {
+        csv += `${s.regNo},${s.name},${s.gender === 'M' ? 'Male' : 'Female'},${s.role}\n`;
+    });
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'staff_export.csv';
+    a.click();
+}
+function downloadStaffTemplate() {
+    const csv = 'Code,Name,Gender,Role\nST001,Example Staff,M,Teacher\n';
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'staff_template.csv';
+    a.click();
+}
+function importStaff(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        const existingRegNos = new Set(staff.map(s => s.regNo));
+        let added = 0;
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const parts = line.split(',');
+            if (parts.length < 4) continue;
+            const regNo = parts[0].trim().toUpperCase();
+            const name = parts[1].trim();
+            const gender = parts[2].trim().toUpperCase();
+            const role = parts[3].trim();
+            if (regNo && name && ['M','F'].includes(gender) && role && !existingRegNos.has(regNo)) {
+                const newStaff = {regNo, name, gender, role};
+                staff.push(newStaff);
+                staffMap.set(regNo, newStaff);
+                existingRegNos.add(regNo);
+                added++;
+            }
+        }
+        saveSchoolData();
+        alert(`Successfully imported ${added} staff members`);
+        renderAll();
+    };
+    reader.readAsText(file);
+}
+document.getElementById('paymentForm').onsubmit = function(e) {
+    e.preventDefault();
+    const regNo = this.dataset.regNo;
+    const amount = parseInt(document.getElementById('payAmount').value);
+    const reason = document.getElementById('payReason').value;
+    const date = document.getElementById('payDate').value;
+    if (isNaN(amount) || amount <= 0 || !reason || !date) {
+        alert('Please fill all fields correctly.');
+        return;
+    }
+    const learner = learnersMap.get(regNo);
+    const paymentId = this.dataset.paymentId;
+    if (paymentId) {
+        const payment = payments.find(p => p.id === parseInt(paymentId));
+        if (payment) {
+            payment.amount = amount;
+            payment.reason = reason;
+            payment.date = date;
+        }
+    } else {
+        const payment = { id: Date.now(), regNo, name: learner.name, amount, reason, term: currentTerm, date };
+        payments.push(payment);
+    }
+    buildPaymentsCache();
+    saveSchoolData();
+    closeModal('paymentModal');
+    renderAll();
+    alert(`Payment saved!`);
+};
+document.addEventListener('DOMContentLoaded', () => {
+    populateSchoolSelector();
+    setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 1000);
+    document.getElementById('learnerSearch').addEventListener('input', () => { // Changed to 'input' for faster response, with debounce
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => renderLearners(1), 150); // Reduced debounce to 150ms
+    });
+});
+</script>
+</body>
+</html>
